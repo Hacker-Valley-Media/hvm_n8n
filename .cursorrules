@@ -1,0 +1,436 @@
+# Rules File for n8n Node Development
+
+## Project Setup
+
+1. **Initial Setup**:
+
+   ```bash
+   # 1. Generate from template repository
+   # 2. Clone and setup
+   git clone https://github.com/<your-organization>/<your-repo-name>.git n8n-nodes-<service>
+   cd n8n-nodes-<service>
+   npm i
+   ```
+
+2. **Required Files**:
+   ```
+   nodes/[ServiceName]/
+     ├── [ServiceName].node.ts           # Main node implementation
+     ├── [ServiceName]Trigger.node.ts    # Trigger node (if needed)
+     ├── [ServiceName].node.json         # Node metadata
+     ├── [ServiceName]Trigger.node.json  # Trigger metadata
+     ├── [serviceName].svg               # Light mode icon
+     ├── [serviceName].dark.svg          # Dark mode icon
+     └── test/                           # Test files
+   ```
+
+**Node Types**:
+
+- Regular nodes for operations (e.g., `Fathom.node.ts`)
+- Trigger nodes for events/polling (e.g., `FathomTrigger.node.ts`)
+- Each type requires its own metadata JSON file
+
+## Node Implementation Best Practices
+
+### 1. Interface Definitions
+
+- Define clear interfaces for API responses at the top of the file
+- Use descriptive names prefixed with service name (e.g., `IFathomCall`, `IFathomResponse`)
+- Break down complex interfaces into smaller, reusable ones
+
+```typescript
+interface IFathomRecording {
+	created_at: string;
+	started_at: string;
+	duration_seconds: number;
+}
+
+interface IFathomCall {
+	id: number;
+	recording: IFathomRecording;
+	// ... other properties
+}
+```
+
+### 2. Node Class Structure
+
+- Implement `INodeType` interface
+- Define clear node description with proper metadata
+- Group related operations under resources
+
+```typescript
+export class ServiceName implements INodeType {
+	description: INodeTypeDescription = {
+		displayName: 'Service Name',
+		name: 'serviceName',
+		icon: 'file:serviceName.svg',
+		group: ['transform'],
+		version: 1,
+		defaults: {
+			name: 'Service Name',
+		},
+		inputs: ['main'],
+		outputs: ['main'],
+		credentials: [
+			{
+				name: 'serviceApiAuth',
+				required: true,
+			},
+		],
+		properties: [
+			// ... node properties
+		],
+	};
+}
+```
+
+### 3. Node Properties Structure
+
+1. **Resource and Operation Selection**:
+
+```typescript
+{
+    displayName: 'Resource',
+    name: 'resource',
+    type: 'options',
+    noDataExpression: true,
+    options: [
+        {
+            name: 'Contact',
+            value: 'contact',
+        },
+    ],
+    default: 'contact',
+},
+{
+    displayName: 'Operation',
+    name: 'operation',
+    type: 'options',
+    noDataExpression: true,
+    displayOptions: {
+        show: {
+            resource: ['contact'],
+        },
+    },
+    options: [
+        {
+            name: 'Create',
+            value: 'create',
+        },
+    ],
+    default: 'create',
+}
+```
+
+2. **Additional Fields Pattern**:
+
+```typescript
+{
+    displayName: 'Additional Fields',
+    name: 'additionalFields',
+    type: 'collection',
+    placeholder: 'Add Field',
+    default: {},
+    displayOptions: {
+        show: {
+            resource: ['contact'],
+            operation: ['create'],
+        },
+    },
+    options: [
+        {
+            displayName: 'First Name',
+            name: 'firstName',
+            type: 'string',
+            default: '',
+        },
+    ],
+}
+```
+
+### 4. Authentication
+
+- Use credentials system for API authentication
+- Handle authentication errors gracefully
+- Check for HTML responses that indicate auth failures
+
+```typescript
+private static checkForAuthError(response: string, node: INode) {
+    if (response.trim().startsWith('<!DOCTYPE')) {
+        throw new NodeOperationError(node, 'Authentication failed');
+    }
+}
+```
+
+### 5. Execute Method Implementation
+
+```typescript
+async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const items = this.getInputData();
+    const returnData: IDataObject[] = [];
+    const resource = this.getNodeParameter('resource', 0) as string;
+    const operation = this.getNodeParameter('operation', 0) as string;
+
+    // Process each input item
+    for (let i = 0; i < items.length; i++) {
+        try {
+            if (resource === 'contact') {
+                if (operation === 'create') {
+                    // Get required parameters
+                    const email = this.getNodeParameter('email', i) as string;
+                    const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+
+                    // Prepare request data
+                    const data: IDataObject = {
+                        email,
+                        ...additionalFields,
+                    };
+
+                    // Make API request
+                    const response = await this.helpers.requestWithAuthentication.call(
+                        this,
+                        'serviceApiAuth',
+                        {
+                            method: 'POST',
+                            url: 'https://api.service.com/v1/contacts',
+                            body: data,
+                            json: true,
+                        },
+                    );
+
+                    returnData.push(response);
+                }
+            }
+        } catch (error) {
+            if (this.continueOnFail()) {
+                returnData.push({ error: error.message });
+                continue;
+            }
+            throw error;
+        }
+    }
+
+    return [this.helpers.returnJsonArray(returnData)];
+}
+```
+
+### 6. API Requests
+
+- Use consistent header structures
+- Handle pagination properly
+- Include proper error handling
+
+```typescript
+const headers = {
+	accept: 'application/json',
+	'x-api-key': credentials.apiKey,
+};
+
+const response = await this.helpers.request({
+	method: 'GET',
+	url: `https://api.service.com/endpoint`,
+	headers,
+	json: true,
+});
+```
+
+### 7. Response Handling
+
+- Always validate response structure
+- Parse string responses carefully
+- Map API responses to n8n format
+
+```typescript
+if (typeof response === 'string') {
+	const parsedResponse = JSON.parse(response);
+	return this.helpers.returnJsonArray(parsedResponse.items);
+}
+```
+
+## Trigger Node Implementation
+
+### 1. Polling Setup
+
+- Use webhook data for state management
+- Implement proper time-based polling
+- Handle cursor-based pagination
+
+```typescript
+const webhookData = this.getWorkflowStaticData('node');
+webhookData.lastTimeChecked = moment().format();
+```
+
+### 2. Trigger Types
+
+- Support multiple trigger types when relevant
+- Use clear trigger parameters
+- Implement proper filtering
+
+```typescript
+{
+    displayName: 'Trigger On',
+    name: 'triggerOn',
+    type: 'options',
+    options: [
+        {
+            name: 'New Item',
+            value: 'newItem',
+            description: 'Trigger when a new item is created',
+        },
+    ],
+    default: 'newItem',
+    required: true,
+}
+```
+
+## UI Elements Best Practices
+
+1. **Search and List Elements**:
+
+   - Use `typeOptions.loadOptionsMethod` for dynamic options
+   - Implement proper search filtering
+   - Reference Trello and Google Drive nodes for examples
+
+2. **Display Options**:
+   - Use `displayOptions` to show/hide fields based on selections
+   - Group related fields using collections
+   - Provide clear descriptions and placeholders
+
+## Testing
+
+### 1. Test File Structure
+
+```
+test/
+  ├── [ServiceName].test.ts
+  └── [ServiceName]Trigger.test.ts
+```
+
+### 2. Test Coverage
+
+- Test all operations
+- Test error handling
+- Test authentication failures
+- Test response parsing
+
+## Error Handling
+
+1. **Consistent Error Structure**:
+
+   - Use `NodeOperationError` for all errors
+   - Include descriptive messages
+   - Add helpful descriptions for users
+
+2. **Error Types to Handle**:
+   - Authentication failures
+   - API rate limits
+   - Invalid responses
+   - Network errors
+   - Parsing errors
+
+## Documentation
+
+1. **Code Comments**:
+
+   - Document complex logic
+   - Explain API quirks
+   - Note any limitations
+
+2. **Node Description**:
+   - Clear operation descriptions
+   - Helpful parameter descriptions
+   - Usage examples
+
+## Examples to Reference
+
+1. **Well-Structured Nodes**:
+   - Fathom node for API integration
+   - Airtable node for complex operations
+   - Clockify node for trigger implementation
+   - Trello node for list with search functionality
+   - Google Drive node for browse/search implementation
+
+## Important Rules
+
+- Always implement proper error handling
+- Use TypeScript interfaces for type safety
+- Follow n8n's naming conventions
+- Test thoroughly before submitting
+- Document clearly for other developers
+- Use the n8n starter repository for new nodes
+- Follow programmatic node development style
+- Implement proper input validation
+- Handle pagination for large datasets
+- Support continue on fail functionality
+
+## Docker Development Stability
+
+### Common Issues and Solutions
+
+1. **Node Package Installation**:
+
+   - Use `--no-frozen-lockfile` when installing in Docker to handle workspace dependencies
+   - Include `build-essential` and `python3` in the Dockerfile for native module compilation
+   - Handle prepare scripts gracefully with `|| true` to prevent build failures
+
+2. **Git Configuration**:
+
+   - Always configure git in the Dockerfile when using tools like lefthook:
+     ```dockerfile
+     RUN git config --global user.email "dev@n8n.io"
+     RUN git config --global user.name "n8n developer"
+     ```
+   - This prevents git-dependent prepare scripts from failing
+
+3. **Volume Management**:
+
+   - When builds fail, clean up volumes with `docker volume prune -f`
+   - Use `docker-compose rm -f` to ensure clean container rebuilds
+
+4. **Build Order**:
+   - Follow this sequence in docker-compose commands:
+     ```yaml
+     command: >
+       bash -c "cd /workspaces &&
+       pnpm install --no-frozen-lockfile &&
+       pnpm run prepare || true &&
+       pnpm build &&
+       pnpm start"
+     ```
+   - This ensures dependencies are properly installed before building
+
+## Docker Volume Naming Stability
+
+### Volume Name Conflicts
+
+1. **Problem**: Docker Compose automatically prefixes volume names with the directory name by default:
+
+   - This can create duplicate volumes with different prefixes when:
+     - The project directory name changes
+     - The container is run from different paths
+     - Different development environments access the same project
+
+2. **Solution**: Always use explicit volume names in docker-compose.yml:
+
+   ```yaml
+   volumes:
+     project_postgres_data:
+       name: project_postgres_data # Explicit naming
+
+   services:
+     postgres:
+       volumes:
+         - project_postgres_data:/var/lib/postgresql/data
+   ```
+
+3. **Best Practices**:
+
+   - Use consistent, project-specific volume names
+   - Always specify the `name` property for volumes
+   - Avoid relying on Docker Compose's automatic naming
+   - Use descriptive prefixes that won't conflict with other projects
+
+```
+
+Do not run commands locally. Commands should be run in docker. Feel free to change files as needed though.
+```

@@ -1,24 +1,55 @@
 volumes:
-  postgres-data:
+  hvm_n8n_devcontainer_postgres-data:
+    name: hvm_n8n_devcontainer_postgres-data
+  hvm_n8n_devcontainer_ollama-data:
+    name: hvm_n8n_devcontainer_ollama-data
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - hvm_n8n_devcontainer_postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=password
+      - N8N_LOG_LEVEL=debug
+    ports:
+      - '5432:5432'
+
+  ollama:
+    image: ollama/ollama:latest
+    platform: linux/arm64
+    restart: unless-stopped
+    volumes:
+      - hvm_n8n_devcontainer_ollama-data:/root/.ollama
+    ports:
+      - '11434:11434'
 
   n8n:
+    platform: linux/arm64
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ..:/workspaces:cached
-    command: sleep infinity
+      - ../:/app:cached
+    command: >
+      bash -c "cd /app &&
+      pnpm install --no-frozen-lockfile &&
+      pnpm run prepare || true &&
+      pnpm build &&
+      pnpm start"
     environment:
       DB_POSTGRESDB_HOST: postgres
       DB_TYPE: postgresdb
       DB_POSTGRESDB_PASSWORD: password
+      NODE_ENV: development
+      N8N_PORT: 8080
+      WEBHOOK_URL: http://localhost:8080/
+      OLLAMA_API_URL: http://ollama:11434
+    ports:
+      - '8080:8080'
+      - '80:8080'
+    depends_on:
+      - postgres
+      - ollama

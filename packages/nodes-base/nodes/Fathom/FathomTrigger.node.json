@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-base.fathomTrigger",
+	"nodeVersion": 1,
+	"codexVersion": 1,
+	"categories": ["Communication"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://fathom.video/docs/api"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://fathom.video/docs/api"
+			}
+		]
+	}
+}
