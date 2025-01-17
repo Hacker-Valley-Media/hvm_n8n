@@ -1,0 +1,38 @@
+{
+	"name": "n8n-nodes-openapi",
+	"version": "0.1.0",
+	"description": "n8n node to interact with OpenAPI/Swagger compatible APIs",
+	"license": "SEE LICENSE IN LICENSE.md",
+	"author": {
+		"name": "n8n GmbH",
+		"email": "info@n8n.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/n8n-io/n8n.git"
+	},
+	"main": "index.js",
+	"scripts": {
+		"dev": "npm run watch",
+		"build": "tsc && gulp build:icons",
+		"lint": "tslint -p tsconfig.json -c tslint.json",
+		"lintfix": "tslint --fix -p tsconfig.json -c tslint.json",
+		"watch": "tsc --watch",
+		"test": "jest"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"credentials": [
+			"dist/credentials/OpenApiApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/OpenAPI/OpenApi.node.js"
+		]
+	},
+	"devDependencies": {
+		"@types/js-yaml": "^4.0.5",
+		"js-yaml": "^4.1.0"
+	}
+}

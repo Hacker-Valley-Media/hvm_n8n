@@ -430,7 +430,92 @@ test/
    - Avoid relying on Docker Compose's automatic naming
    - Use descriptive prefixes that won't conflict with other projects
 
-```
+## Git Operations with Docker Development
+
+### Common Git Operation Patterns
+
+1. **Commits Inside Docker**:
+
+   ```bash
+   # Use this pattern for commits to ensure lefthook runs properly
+   docker compose -f .devcontainer/docker-compose.yml exec n8n bash -c "cd /app && git commit -m 'your message'"
+   ```
+
+2. **Git Safety Configuration**:
+
+   - When working with mounted volumes, configure git safety:
+
+   ```bash
+   git config --global --add safe.directory /app
+   ```
+
+3. **Authentication Operations**:
+
+   - Perform git operations requiring authentication (push, pull) from local machine
+   - Keep commits and development operations in Docker where lefthook and other dev dependencies are properly configured
+   - Example workflow:
+     1. Make changes in Docker environment
+     2. Commit using Docker (for lefthook checks)
+     3. Push from local machine (for GitHub authentication)
+
+4. **Volume Path Awareness**:
+   - Be aware of the correct mounted paths in Docker
+   - In this project: `/app` is the workspace mount point
+   - Use correct paths when running git commands in container
 
 Do not run commands locally. Commands should be run in docker. Feel free to change files as needed though.
-```
+
+## Generic Node Development
+
+### 1. Reference Node Pattern
+
+- Always use existing nodes as reference (e.g., Fathom node for API integration)
+- Follow the exact patterns from reference nodes for:
+  - Class naming and exports
+  - Interface definitions
+  - Method implementations
+- Don't reinvent patterns that already exist in the codebase
+
+### 2. Schema Handling
+
+- Support multiple schema input methods (URL and direct string)
+- Implement proper schema validation
+- Handle both JSON and YAML formats gracefully
+- Validate schema structure before processing
+
+### 3. Class Naming and Exports
+
+- Maintain consistent class naming throughout development
+- Follow n8n's naming conventions strictly (e.g., `OpenApi` not `OpenAPI`)
+- Ensure class exports match the expected constructor name
+- Keep file names aligned with class names
+
+### 4. Package Management
+
+- Make minimal, targeted changes to package.json
+- Add only necessary entries for new nodes
+- Maintain alphabetical ordering in arrays
+- Don't modify entries for other nodes
+
+## Docker Volume Management
+
+### 1. Data Preservation
+
+- Never suggest deleting volumes containing live data
+- Work around volume issues without data loss
+- Understand which volumes contain persistent data
+- Treat all volumes as potentially containing production data
+
+### 2. Build Issues
+
+- Resolve build issues without volume deletion
+- Focus on code-level solutions first
+- Use `--no-frozen-lockfile` for dependency issues
+- Handle prepare scripts with `|| true` when needed
+
+### 3. Development Workflow
+
+- Keep existing volumes when rebuilding
+- Use targeted rebuilds for specific services
+- Maintain data integrity during development
+- Follow the principle of least destruction

@@ -102,6 +102,7 @@
       "dist/credentials/FacebookGraphApi.credentials.js",
       "dist/credentials/FacebookGraphAppApi.credentials.js",
       "dist/credentials/FacebookLeadAdsOAuth2Api.credentials.js",
+      "dist/credentials/FathomApi.credentials.js",
       "dist/credentials/FigmaApi.credentials.js",
       "dist/credentials/FileMaker.credentials.js",
       "dist/credentials/FilescanApi.credentials.js",
@@ -258,6 +259,7 @@
       "dist/credentials/OneSimpleApi.credentials.js",
       "dist/credentials/OnfleetApi.credentials.js",
       "dist/credentials/OpenAiApi.credentials.js",
+      "dist/credentials/OpenApiApi.credentials.js",
       "dist/credentials/OpenCTIApi.credentials.js",
       "dist/credentials/OpenWeatherMapApi.credentials.js",
       "dist/credentials/OrbitApi.credentials.js",
@@ -499,6 +501,8 @@
       "dist/nodes/Facebook/FacebookGraphApi.node.js",
       "dist/nodes/Facebook/FacebookTrigger.node.js",
       "dist/nodes/FacebookLeadAds/FacebookLeadAdsTrigger.node.js",
+      "dist/nodes/Fathom/Fathom.node.js",
+      "dist/nodes/Fathom/FathomTrigger.node.js",
       "dist/nodes/Figma/FigmaTrigger.node.js",
       "dist/nodes/FileMaker/FileMaker.node.js",
       "dist/nodes/Files/ReadWriteFile/ReadWriteFile.node.js",
@@ -669,7 +673,7 @@
       "dist/nodes/Okta/Okta.node.js",
       "dist/nodes/OneSimpleApi/OneSimpleApi.node.js",
       "dist/nodes/OpenAi/OpenAi.node.js",
-      "dist/nodes/OpenThesaurus/OpenThesaurus.node.js",
+      "dist/nodes/OpenAPI/OpenApi.node.js",
       "dist/nodes/OpenWeatherMap/OpenWeatherMap.node.js",
       "dist/nodes/Orbit/Orbit.node.js",
       "dist/nodes/Oura/Oura.node.js",
@@ -830,6 +834,7 @@
     "@types/html-to-text": "^9.0.1",
     "@types/gm": "^1.25.0",
     "@types/js-nacl": "^1.3.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/lodash": "catalog:",
     "@types/lossless-json": "^1.0.0",
@@ -845,7 +850,8 @@
     "@types/uuid": "catalog:",
     "@types/xml2js": "catalog:",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
-    "n8n-core": "workspace:*"
+    "n8n-core": "workspace:*",
+    "@types/js-yaml": "^4.0.9"
   },
   "dependencies": {
     "@aws-sdk/client-sso-oidc": "3.666.0",
@@ -875,6 +881,7 @@
     "isbot": "3.6.13",
     "iso-639-1": "2.1.15",
     "js-nacl": "1.4.0",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "9.0.2",
     "kafkajs": "1.16.0",
     "ldapts": "4.2.6",
@@ -913,6 +920,7 @@
     "typedi": "catalog:",
     "uuid": "catalog:",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz",
-    "xml2js": "catalog:"
+    "xml2js": "catalog:",
+    "js-yaml": "^4.1.0"
   }
 }
